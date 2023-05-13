@@ -2,72 +2,66 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:developer' as developer;
 
-// Event untuk YourFirstBloc
-abstract class YourFirstEvent {}
-
-class YourFirstEventOne extends YourFirstEvent {}
-
-class YourFirstEventTwo extends YourFirstEvent {}
-
-// State untuk YourFirstBloc
+// Event dan State untuk YourFirstCubit
 abstract class YourFirstState {}
 
 class YourFirstStateOne extends YourFirstState {}
 
 class YourFirstStateTwo extends YourFirstState {}
 
-// YourFirstBloc
-class YourFirstBloc extends Bloc<YourFirstEvent, YourFirstState> {
-  YourFirstBloc() : super(YourFirstStateOne());
+// YourFirstCubit
+class YourFirstCubit extends Cubit<YourFirstState> {
+  // YourFirstCubit() : super(YourFirstStateOne());
+  YourFirstCubit() : super(YourFirstStateOne()) {
+    _fetchData();
+  }
+  dynamic _items = [];
 
-  @override
-  Stream<YourFirstState> mapEventToState(YourFirstEvent event) async* {
-    if (event is YourFirstEventOne) {
-      yield YourFirstStateOne();
-    } else if (event is YourFirstEventTwo) {
-      yield YourFirstStateTwo();
+  Future<void> _fetchData() async {
+    final response =
+        await http.get(Uri.parse('http://178.128.17.76:8000/daftar_umkm'));
+
+    if (response.statusCode == 200) {
+      // setState(() {
+      _items = json.decode(response.body);
+      List<dynamic> datas = _items['data'];
+      _items = datas;
+      emit(_items);
+      return(_items);
+      // });
+    } else {
+      throw Exception('Failed to load data');
     }
   }
 }
 
-// Event untuk YourSecondBloc
-abstract class YourSecondEvent {}
-
-class YourSecondEventOne extends YourSecondEvent {}
-
-class YourSecondEventTwo extends YourSecondEvent {}
-
-// State untuk YourSecondBloc
+// Event dan State untuk YourSecondCubit
 abstract class YourSecondState {}
 
 class YourSecondStateOne extends YourSecondState {}
 
 class YourSecondStateTwo extends YourSecondState {}
 
-// YourSecondBloc
-class YourSecondBloc extends Bloc<YourSecondEvent, YourSecondState> {
-  YourSecondBloc() : super(YourSecondStateOne());
+// YourSecondCubit
+class YourSecondCubit extends Cubit<YourSecondState> {
+  YourSecondCubit() : super(YourSecondStateOne());
 
-  @override
-  Stream<YourSecondState> mapEventToState(YourSecondEvent event) async* {
-    if (event is YourSecondEventOne) {
-      yield YourSecondStateOne();
-    } else if (event is YourSecondEventTwo) {
-      yield YourSecondStateTwo();
-    }
-  }
+  void emitStateOne() => emit(YourSecondStateOne());
+
+  void emitStateTwo() => emit(YourSecondStateTwo());
 }
 
 void main() {
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider<YourFirstBloc>(
-          create: (_) => YourFirstBloc(),
+        BlocProvider<YourFirstCubit>(
+          create: (_) => YourFirstCubit(),
         ),
-        BlocProvider<YourSecondBloc>(
-          create: (_) => YourSecondBloc(),
+        BlocProvider<YourSecondCubit>(
+          create: (_) => YourSecondCubit(),
         ),
       ],
       child: MyApp(),
@@ -79,7 +73,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Card and Routing Example',
+      title: 'Kuis 3 Provis Kelompok 7',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -95,6 +89,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   dynamic _items = [];
+  int count = 0;
 
   Future<void> _fetchData() async {
     final response =
@@ -110,6 +105,7 @@ class _HomePageState extends State<HomePage> {
       throw Exception('Failed to load data');
     }
   }
+  
 
   @override
   void initState() {
@@ -120,40 +116,83 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home Page'),
-      ),
-      body: _items.isEmpty
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: EdgeInsets.all(8.0),
-                  child: ListTile(
-                    title: Text(_items[index]['nama']),
-                    subtitle: Text(_items[index]['jenis']),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailPage(
-                            id: _items[index]['id'],
-                            title: _items[index]['nama'],
-                            message: _items[index]['jenis'],
-                          ),
-                        ),
-                      );
-                    },
-                    leading: Image.network(
-                        'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl-2.jpg'),
-                    trailing: const Icon(Icons.more_vert),
-                    tileColor: Colors.white,
-                  ),
-                );
-              },
+        appBar: AppBar(
+          title: Center(
+            child: Text('App'),
+          ),
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: Text("2106515, " +
+                  "Fachri Najm Noer Kartiman; " +
+                  "2106238, " +
+                  "Raisyad Jullfikar"),
             ),
-    );
+            Container(
+              child: Column(
+                children: [
+                  BlocBuilder<YourFirstCubit, YourFirstState>(
+                    builder: (context, aktivitas) {
+                      return Center(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                            Padding(
+                              padding: EdgeInsets.only(top: 10, bottom: 10),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    context.read<YourFirstCubit>()._fetchData();
+                                    count++;
+                                  });
+                                },
+                                child: Text("Reload Daftar UMKM"),
+                              ),
+                            ),
+                          ]));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            count == 0
+                ? Center()
+                : Expanded(
+                    child: _items.isEmpty
+                        ? Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                            itemCount: _items.length,
+                            itemBuilder: (context, index) {
+                              return Card(
+                                margin: EdgeInsets.all(8.0),
+                                child: ListTile(
+                                  title: Text(_items[index]['nama']),
+                                  subtitle: Text(_items[index]['jenis']),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DetailPage(
+                                          id: _items[index]['id'],
+                                          title: _items[index]['nama'],
+                                          message: _items[index]['jenis'],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  leading: Image.network(
+                                      'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl-2.jpg'),
+                                  trailing: const Icon(Icons.more_vert),
+                                  tileColor: Colors.white,
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+          ],
+        ));
   }
 }
 
@@ -202,14 +241,22 @@ class _DetailPageState extends State<DetailPage> {
             ? Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  Text("Nama : " + _item['nama']),
-                  Text("Detil : " + _item['jenis']),
-                  Text("Member Sejak : " + _item['member_sejak']),
-                  Text("Omzet Per Bulan : " + _item['omzet_bulan']),
-                  Text("Lama Usaha : " + _item['lama_usaha']),
-                  Text("Jumlah Pinjaman Sukses : " +
-                      _item['jumlah_pinjaman_sukses']),
-                  // Text(widget.id),
+                  BlocBuilder<YourSecondCubit, YourSecondState>(
+                    builder: (context, aktivitas) {
+                      return Center(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                            Text("Nama : " + _item['nama']),
+                            Text("Detil : " + _item['jenis']),
+                            Text("Member Sejak : " + _item['member_sejak']),
+                            Text("Omzet Per Bulan : " + _item['omzet_bulan']),
+                            Text("Lama Usaha : " + _item['lama_usaha']),
+                            Text("Jumlah Pinjaman Sukses : " +
+                                _item['jumlah_pinjaman_sukses']),
+                          ]));
+                    },
+                  ),
                 ],
               ),
       ),
